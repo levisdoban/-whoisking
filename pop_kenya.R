@@ -201,10 +201,12 @@ for(i in 86:dim(data3)[1]){
     name_codesx = (get_me_codes(list_ff))
     codes = tell_me_artists(name_codesx)
     namesart = name_them(codes, splited)
+    colab = ifelse(length(namesart)>1, "yes","no")
     
     for(j in 1:length(namesart)){
       cartist = namesart[j]
-      datav = cbind(drow,cartist)
+      
+      datav = cbind(drow,cartist, colab)
       final_data = rbind(final_data, datav) 
     } 
     
@@ -218,5 +220,47 @@ for(i in 86:dim(data3)[1]){
   
   
 }
+
+
+
+toget = c("khaligraphjones", "kaka", "juliani")
+analysisdata = final_data[cartist %in% toget]
+analysisdata$cartist = as.factor(analysisdata$cartist)
+analysisdata$colab= as.factor(analysisdata$colab)
+analysisdata$l_score= log(analysisdata$mean_score)
+analysisdata$age= round(difftime(Sys.Date(),unixtodate(analysisdata$d_posted), units = "days"),0)
+analysisdata = analysisdata[analysisdata$l_score != '-Inf',]
+analysisdata$colabdummy= ifelse(analysisdata$colab=="yes",1,0)
+analysisdata$age = as.numeric(analysisdata$age)
+
+out <- lm(l_score ~ age + cartist + colabdummy + 0, data=analysisdata)
+summary(out)
+coef <- coefficients(out)
+coef
+
+png(file="king.png",width=500,height=350,res=72)
+
+plot(analysisdata$age, analysisdata$l_score, type = "n", xlab="Age of video (days)",ylab="Log of Score", main="#WhoIsKing")
+
+for (cart in levels(analysisdata$cartist)) {
+  k <- cart
+  points( analysisdata$age[k], analysisdata$l_score[k],col=grep(cart, levels(analysisdata$cartist)) )
+  predname <- paste("cartist", cart, sep="")
+  abline(coef[predname], coef["age"], col=grep(cart, levels(analysisdata$cartist)))
+  #legend("top", levels(analysisdata$cartist), pch = 1, title = "top")
+  #legend("top", levels(analysisdata$cartist), pch = 1, col = grep(cart, levels(analysisdata$cartist)))
+}
+
+legend("topright", levels(analysisdata$cartist), lty=c(1,1,1), lwd=c(0.5,0.5,0.5),text.col = 1:length(levels(analysisdata$cartist)), text.font = 1:3 )
+
+dev.off()
+
+png(file="age_of_vids.png",width=500,height=350,res=72)
+boxplot(age ~ cartist,data=analysisdata, main="#WhoIsKing",xlab="Artist", ylab="Age of videos (days)", col=rainbow(3))
+
+dev.off()
+
+
+
 
 
